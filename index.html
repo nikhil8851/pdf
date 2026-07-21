@@ -69,13 +69,11 @@
 </div>
 
 <script>
-  // Supabase Configurations (Configured)
   const SUPABASE_URL = "https://gdfyqbwzuxfrqedgxikn.supabase.co"; 
   const SUPABASE_KEY = "sb_publishable_wKqig-JCs-t14lrS-VyhAg_fCfX-uPV";
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Switch Tabs
   function switchTab(tabName) {
     const uploadBtn = document.querySelectorAll('.tab-btn')[0];
     const downloadBtn = document.querySelectorAll('.tab-btn')[1];
@@ -96,7 +94,7 @@
     }
   }
 
-  // Upload File
+  // Upload File (Updated bucket name to 'pdf share')
   async function uploadFile() {
     const fileInput = document.getElementById('pdfInput');
     const status = document.getElementById('status');
@@ -115,13 +113,13 @@
 
     const { data, error } = await supabaseClient
       .storage
-      .from('pdfs')
+      .from('pdf share')
       .upload(fileName, file);
 
     if (error) {
       console.error(error);
       status.style.color = "#dc3545";
-      status.innerText = "❌ Upload Fail! Check karein ki Supabase me 'pdfs' bucket bana hai aur Public hai.";
+      status.innerText = "❌ Upload Fail! Storage Policies check karein.";
     } else {
       status.style.color = "#28a745";
       status.innerText = "✅ PDF Successful Upload Ho Gayi!";
@@ -129,14 +127,14 @@
     }
   }
 
-  // Load Files
+  // Load Files (Updated bucket name to 'pdf share')
   async function loadFiles() {
     const fileList = document.getElementById('fileList');
     fileList.innerHTML = "<p style='text-align: center; color: #888;'>Loading files...</p>";
 
     const { data, error } = await supabaseClient
       .storage
-      .from('pdfs')
+      .from('pdf share')
       .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
     if (error) {
@@ -155,7 +153,7 @@
     data.forEach(file => {
       const { data: urlData } = supabaseClient
         .storage
-        .from('pdfs')
+        .from('pdf share')
         .getPublicUrl(file.name);
 
       const itemDiv = document.createElement('div');
@@ -168,7 +166,6 @@
     });
   }
 
-  // Initial load
   loadFiles();
 </script>
 
