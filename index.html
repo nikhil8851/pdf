@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Share - Mobile & PC</title>
+    <title>PDF Share - Mobile to PC</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f7fe; padding: 20px; display: flex; justify-content: center; }
@@ -15,7 +16,6 @@
         .tab-btn { flex: 1; padding: 12px; border: none; background: #e0e0e0; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #555; transition: 0.3s; }
         .tab-btn.active { background: #007bff; color: white; }
 
-        /* Section Panels */
         .panel { display: none; }
         .panel.active { display: block; }
 
@@ -38,57 +38,45 @@
 <body>
 
 <div class="container">
-    <h2>📄 PDF Transfer Hub</h2>
+    <h2>📄 PDF Share</h2>
 
-    <!-- Section Navigation Buttons -->
+    <!-- Navigation Tabs -->
     <div class="tab-buttons">
         <button class="tab-btn active" onclick="switchTab('upload')">📤 Upload Section</button>
         <button class="tab-btn" onclick="switchTab('download')">📥 Download Section</button>
     </div>
     
-    <!-- 1. UPLOAD SECTION -->
+    <!-- UPLOAD PANEL -->
     <div id="uploadPanel" class="panel active">
         <div class="upload-section">
-            <p style="margin-top:0; color:#555;">Mobile se PDF File chun kar Upload karein:</p>
+            <p style="margin-top:0; color:#555;">Mobile se PDF Choose karein:</p>
             <label for="pdfInput" class="btn-upload">📁 Choose & Upload PDF</label>
             <input type="file" id="pdfInput" accept="application/pdf" onchange="uploadFile()">
             <p id="status"></p>
         </div>
     </div>
 
-    <!-- 2. DOWNLOAD SECTION -->
+    <!-- DOWNLOAD PANEL -->
     <div id="downloadPanel" class="panel">
         <div style="overflow: hidden;">
             <button class="btn-refresh" onclick="loadFiles()">🔄 Refresh List</button>
             <h3 style="margin: 0 0 10px 0; color: #333;">Available Files</h3>
         </div>
         <div class="file-list" id="fileList">
-            <p style="text-align: center; color: #888;">Fetching files...</p>
+            <p style="text-align: center; color: #888;">Loading files...</p>
         </div>
     </div>
 </div>
 
-<!-- Firebase SDKs -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+<script>
+  // Supabase Configurations (Configured)
+  const SUPABASE_URL = "https://gdfyqbwzuxfrqedgxikn.supabase.co"; 
+  const SUPABASE_KEY = "sb_publishable_wKqig-JCs-t14lrS-VyhAg_fCfX-uPV";
 
-  // Aapki Firebase Configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyB1_UghAbC24kindvpZKndCeb9loT0SYqw",
-    authDomain: "pdf1-1b7f1.firebaseapp.com",
-    projectId: "pdf1-1b7f1",
-    storageBucket: "pdf1-1b7f1.firebasestorage.app",
-    messagingSenderId: "691617010770",
-    appId: "1:691617010770:web:a804c951ef92fa7fb0fb8b",
-    measurementId: "G-BPN828DBE5"
-  };
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const app = initializeApp(firebaseConfig);
-  const storage = getStorage(app);
-
-  // Switch Between Sections
-  window.switchTab = function(tabName) {
+  // Switch Tabs
+  function switchTab(tabName) {
     const uploadBtn = document.querySelectorAll('.tab-btn')[0];
     const downloadBtn = document.querySelectorAll('.tab-btn')[1];
     const uploadPanel = document.getElementById('uploadPanel');
@@ -104,12 +92,12 @@
         uploadBtn.classList.remove('active');
         downloadPanel.classList.add('active');
         uploadPanel.classList.remove('active');
-        loadFiles(); // Auto-refresh files when switching to download tab
+        loadFiles();
     }
   }
 
-  // File Upload Function
-  window.uploadFile = async function() {
+  // Upload File
+  async function uploadFile() {
     const fileInput = document.getElementById('pdfInput');
     const status = document.getElementById('status');
     const file = fileInput.files[0];
@@ -122,53 +110,65 @@
 
     status.style.color = "#007bff";
     status.innerText = "⏳ Uploading... Kripya wait karein.";
-    const storageRef = ref(storage, 'pdfs/' + file.name);
 
-    try {
-      await uploadBytes(storageRef, file);
-      status.style.color = "#28a745";
-      status.innerText = "✅ PDF Successful Upload Ho Gayi!";
-      fileInput.value = ""; // Reset input
-    } catch (error) {
+    const fileName = `${Date.now()}_${file.name}`;
+
+    const { data, error } = await supabaseClient
+      .storage
+      .from('pdfs')
+      .upload(fileName, file);
+
+    if (error) {
       console.error(error);
       status.style.color = "#dc3545";
-      status.innerText = "❌ Upload Fail! Firebase Storage Rules check karein.";
+      status.innerText = "❌ Upload Fail! Check karein ki Supabase me 'pdfs' bucket bana hai aur Public hai.";
+    } else {
+      status.style.color = "#28a745";
+      status.innerText = "✅ PDF Successful Upload Ho Gayi!";
+      fileInput.value = "";
     }
   }
 
-  // Fetch and Load Files for Download
-  window.loadFiles = async function() {
+  // Load Files
+  async function loadFiles() {
     const fileList = document.getElementById('fileList');
     fileList.innerHTML = "<p style='text-align: center; color: #888;'>Loading files...</p>";
-    const listRef = ref(storage, 'pdfs');
 
-    try {
-      const res = await listAll(listRef);
-      fileList.innerHTML = "";
+    const { data, error } = await supabaseClient
+      .storage
+      .from('pdfs')
+      .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
-      if (res.items.length === 0) {
-        fileList.innerHTML = "<p style='text-align: center; color: #888;'>Abhi koi file upload nahi hui hai.</p>";
-        return;
-      }
-
-      for (const itemRef of res.items) {
-        const url = await getDownloadURL(itemRef);
-        
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'file-item';
-        itemDiv.innerHTML = `
-          <span class="file-name" title="${itemRef.name}">📄 ${itemRef.name}</span>
-          <a href="${url}" target="_blank" download class="btn-download">Download</a>
-        `;
-        fileList.appendChild(itemDiv);
-      }
-    } catch (error) {
+    if (error) {
       console.error(error);
-      fileList.innerHTML = "<p style='color: red; text-align: center;'>Files load nahi ho paayein. Firebase Rules check karein.</p>";
+      fileList.innerHTML = "<p style='color: red; text-align: center;'>Files load nahi ho paayein.</p>";
+      return;
     }
+
+    fileList.innerHTML = "";
+
+    if (!data || data.length === 0) {
+      fileList.innerHTML = "<p style='text-align: center; color: #888;'>Abhi koi file upload nahi hui hai.</p>";
+      return;
+    }
+
+    data.forEach(file => {
+      const { data: urlData } = supabaseClient
+        .storage
+        .from('pdfs')
+        .getPublicUrl(file.name);
+
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'file-item';
+      itemDiv.innerHTML = `
+        <span class="file-name" title="${file.name}">📄 ${file.name}</span>
+        <a href="${urlData.publicUrl}" target="_blank" download class="btn-download">Download</a>
+      `;
+      fileList.appendChild(itemDiv);
+    });
   }
 
-  // Initial Load
+  // Initial load
   loadFiles();
 </script>
 
