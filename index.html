@@ -3,41 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Share - Mobile to PC</title>
+    <title>PDF Share - Mobile & PC</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f7fe; padding: 20px; display: flex; justify-content: center; }
-        .container { max-width: 500px; width: 100%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { max-width: 550px; width: 100%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #333; margin-top: 0; }
-        .upload-section { border: 2px dashed #007bff; border-radius: 8px; padding: 20px; text-align: center; background: #eef6ff; margin-bottom: 20px; }
+        
+        /* Navigation Tabs */
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: #e0e0e0; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #555; transition: 0.3s; }
+        .tab-btn.active { background: #007bff; color: white; }
+
+        /* Section Panels */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* Upload Styling */
+        .upload-section { border: 2px dashed #007bff; border-radius: 8px; padding: 30px 20px; text-align: center; background: #eef6ff; }
         input[type="file"] { display: none; }
-        .btn-upload { background: #007bff; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; display: inline-block; font-weight: bold; }
+        .btn-upload { background: #007bff; color: white; padding: 12px 24px; border-radius: 6px; cursor: pointer; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 2px 8px rgba(0,123,255,0.3); }
         .btn-upload:hover { background: #0056b3; }
-        .file-list { margin-top: 20px; }
-        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; }
-        .file-name { font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
-        .btn-download { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; }
+        #status { text-align: center; font-size: 14px; margin-top: 15px; font-weight: bold; }
+
+        /* Download Styling */
+        .file-list { margin-top: 10px; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; }
+        .file-name { font-size: 14px; color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
+        .btn-download { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; }
         .btn-download:hover { background: #218838; }
-        #status { text-align: center; color: #666; font-size: 14px; margin-top: 10px; font-weight: bold; }
+        .btn-refresh { background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; float: right; margin-bottom: 10px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📄 PDF File Share</h2>
+    <h2>📄 PDF Transfer Hub</h2>
+
+    <!-- Section Navigation Buttons -->
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('upload')">📤 Upload Section</button>
+        <button class="tab-btn" onclick="switchTab('download')">📥 Download Section</button>
+    </div>
     
-    <!-- Upload Section -->
-    <div class="upload-section">
-        <p>Mobile se PDF Choose karein:</p>
-        <label for="pdfInput" class="btn-upload">Select & Upload PDF</label>
-        <input type="file" id="pdfInput" accept="application/pdf" onchange="uploadFile()">
-        <p id="status"></p>
+    <!-- 1. UPLOAD SECTION -->
+    <div id="uploadPanel" class="panel active">
+        <div class="upload-section">
+            <p style="margin-top:0; color:#555;">Mobile se PDF File chun kar Upload karein:</p>
+            <label for="pdfInput" class="btn-upload">📁 Choose & Upload PDF</label>
+            <input type="file" id="pdfInput" accept="application/pdf" onchange="uploadFile()">
+            <p id="status"></p>
+        </div>
     </div>
 
-    <!-- File List Section -->
-    <h3>Uploaded Files (PC / Laptop se Download karein):</h3>
-    <div class="file-list" id="fileList">
-        <p style="text-align: center; color: #888;">Fetching files...</p>
+    <!-- 2. DOWNLOAD SECTION -->
+    <div id="downloadPanel" class="panel">
+        <div style="overflow: hidden;">
+            <button class="btn-refresh" onclick="loadFiles()">🔄 Refresh List</button>
+            <h3 style="margin: 0 0 10px 0; color: #333;">Available Files</h3>
+        </div>
+        <div class="file-list" id="fileList">
+            <p style="text-align: center; color: #888;">Fetching files...</p>
+        </div>
     </div>
 </div>
 
@@ -60,6 +87,27 @@
   const app = initializeApp(firebaseConfig);
   const storage = getStorage(app);
 
+  // Switch Between Sections
+  window.switchTab = function(tabName) {
+    const uploadBtn = document.querySelectorAll('.tab-btn')[0];
+    const downloadBtn = document.querySelectorAll('.tab-btn')[1];
+    const uploadPanel = document.getElementById('uploadPanel');
+    const downloadPanel = document.getElementById('downloadPanel');
+
+    if(tabName === 'upload') {
+        uploadBtn.classList.add('active');
+        downloadBtn.classList.remove('active');
+        uploadPanel.classList.add('active');
+        downloadPanel.classList.remove('active');
+    } else {
+        downloadBtn.classList.add('active');
+        uploadBtn.classList.remove('active');
+        downloadPanel.classList.add('active');
+        uploadPanel.classList.remove('active');
+        loadFiles(); // Auto-refresh files when switching to download tab
+    }
+  }
+
   // File Upload Function
   window.uploadFile = async function() {
     const fileInput = document.getElementById('pdfInput');
@@ -79,18 +127,19 @@
     try {
       await uploadBytes(storageRef, file);
       status.style.color = "#28a745";
-      status.innerText = "✅ Upload Successful!";
-      loadFiles(); // Refresh file list
+      status.innerText = "✅ PDF Successful Upload Ho Gayi!";
+      fileInput.value = ""; // Reset input
     } catch (error) {
       console.error(error);
       status.style.color = "#dc3545";
-      status.innerText = "❌ Upload Fail Ho Gaya! Firebase Rules check karein.";
+      status.innerText = "❌ Upload Fail! Firebase Storage Rules check karein.";
     }
   }
 
-  // Load and Display Files
-  async function loadFiles() {
+  // Fetch and Load Files for Download
+  window.loadFiles = async function() {
     const fileList = document.getElementById('fileList');
+    fileList.innerHTML = "<p style='text-align: center; color: #888;'>Loading files...</p>";
     const listRef = ref(storage, 'pdfs');
 
     try {
@@ -98,7 +147,7 @@
       fileList.innerHTML = "";
 
       if (res.items.length === 0) {
-        fileList.innerHTML = "<p style='text-align: center; color: #888;'>Koi file upload nahi hai.</p>";
+        fileList.innerHTML = "<p style='text-align: center; color: #888;'>Abhi koi file upload nahi hui hai.</p>";
         return;
       }
 
@@ -108,14 +157,14 @@
         const itemDiv = document.createElement('div');
         itemDiv.className = 'file-item';
         itemDiv.innerHTML = `
-          <span class="file-name" title="${itemRef.name}">${itemRef.name}</span>
+          <span class="file-name" title="${itemRef.name}">📄 ${itemRef.name}</span>
           <a href="${url}" target="_blank" download class="btn-download">Download</a>
         `;
         fileList.appendChild(itemDiv);
       }
     } catch (error) {
       console.error(error);
-      fileList.innerHTML = "<p style='color: red; text-align: center;'>Files load nahi ho payi. Firebase Storage Rules open karein.</p>";
+      fileList.innerHTML = "<p style='color: red; text-align: center;'>Files load nahi ho paayein. Firebase Rules check karein.</p>";
     }
   }
 
