@@ -11,7 +11,6 @@
         .container { max-width: 550px; width: 100%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #333; margin-top: 0; }
         
-        /* Navigation Tabs */
         .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: #e0e0e0; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #555; transition: 0.3s; }
         .tab-btn.active { background: #007bff; color: white; }
@@ -19,19 +18,15 @@
         .panel { display: none; }
         .panel.active { display: block; }
 
-        /* Upload Styling */
         .upload-section { border: 2px dashed #007bff; border-radius: 8px; padding: 30px 20px; text-align: center; background: #eef6ff; }
         input[type="file"] { display: none; }
         .btn-upload { background: #007bff; color: white; padding: 12px 24px; border-radius: 6px; cursor: pointer; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 2px 8px rgba(0,123,255,0.3); }
-        .btn-upload:hover { background: #0056b3; }
         #status { text-align: center; font-size: 14px; margin-top: 15px; font-weight: bold; }
 
-        /* Download Styling */
         .file-list { margin-top: 10px; }
         .file-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; }
         .file-name { font-size: 14px; color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
         .btn-download { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; }
-        .btn-download:hover { background: #218838; }
         .btn-refresh { background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; float: right; margin-bottom: 10px; font-size: 12px; }
     </style>
 </head>
@@ -40,13 +35,11 @@
 <div class="container">
     <h2>📄 PDF Share</h2>
 
-    <!-- Navigation Tabs -->
     <div class="tab-buttons">
         <button class="tab-btn active" onclick="switchTab('upload')">📤 Upload Section</button>
         <button class="tab-btn" onclick="switchTab('download')">📥 Download Section</button>
     </div>
     
-    <!-- UPLOAD PANEL -->
     <div id="uploadPanel" class="panel active">
         <div class="upload-section">
             <p style="margin-top:0; color:#555;">Mobile se PDF Choose karein:</p>
@@ -56,7 +49,6 @@
         </div>
     </div>
 
-    <!-- DOWNLOAD PANEL -->
     <div id="downloadPanel" class="panel">
         <div style="overflow: hidden;">
             <button class="btn-refresh" onclick="loadFiles()">🔄 Refresh List</button>
@@ -94,7 +86,6 @@
     }
   }
 
-  // Upload File (Updated bucket name to 'pdf share')
   async function uploadFile() {
     const fileInput = document.getElementById('pdfInput');
     const status = document.getElementById('status');
@@ -111,9 +102,10 @@
 
     const fileName = `${Date.now()}_${file.name}`;
 
+    // Bucket name set to 'pdfs'
     const { data, error } = await supabaseClient
       .storage
-      .from('pdf share')
+      .from('pdfs')
       .upload(fileName, file);
 
     if (error) {
@@ -127,14 +119,14 @@
     }
   }
 
-  // Load Files (Updated bucket name to 'pdf share')
   async function loadFiles() {
     const fileList = document.getElementById('fileList');
     fileList.innerHTML = "<p style='text-align: center; color: #888;'>Loading files...</p>";
 
+    // Bucket name set to 'pdfs'
     const { data, error } = await supabaseClient
       .storage
-      .from('pdf share')
+      .from('pdfs')
       .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
     if (error) {
@@ -153,7 +145,7 @@
     data.forEach(file => {
       const { data: urlData } = supabaseClient
         .storage
-        .from('pdf share')
+        .from('pdfs')
         .getPublicUrl(file.name);
 
       const itemDiv = document.createElement('div');
