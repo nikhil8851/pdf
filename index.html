@@ -18,7 +18,7 @@
         .file-name { font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
         .btn-download { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; }
         .btn-download:hover { background: #218838; }
-        #status { text-align: center; color: #666; font-size: 14px; margin-top: 10px; }
+        #status { text-align: center; color: #666; font-size: 14px; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -46,16 +46,16 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-  // 🔴 Yahan Apni Firebase Configuration Keys Daalein
+  // Aapki Firebase Configuration
   const firebaseConfig = {
-  apiKey: "AIzaSyB1_UghAbC24kindvpZKndCeb9loT0SYqw",
-  authDomain: "pdf1-1b7f1.firebaseapp.com",
-  projectId: "pdf1-1b7f1",
-  storageBucket: "pdf1-1b7f1.firebasestorage.app",
-  messagingSenderId: "691617010770",
-  appId: "1:691617010770:web:a804c951ef92fa7fb0fb8b",
-  measurementId: "G-BPN828DBE5"
-};
+    apiKey: "AIzaSyB1_UghAbC24kindvpZKndCeb9loT0SYqw",
+    authDomain: "pdf1-1b7f1.firebaseapp.com",
+    projectId: "pdf1-1b7f1",
+    storageBucket: "pdf1-1b7f1.firebasestorage.app",
+    messagingSenderId: "691617010770",
+    appId: "1:691617010770:web:a804c951ef92fa7fb0fb8b",
+    measurementId: "G-BPN828DBE5"
+  };
 
   const app = initializeApp(firebaseConfig);
   const storage = getStorage(app);
@@ -72,16 +72,19 @@
         return;
     }
 
-    status.innerText = "Uploading... Kripya wait karein.";
+    status.style.color = "#007bff";
+    status.innerText = "⏳ Uploading... Kripya wait karein.";
     const storageRef = ref(storage, 'pdfs/' + file.name);
 
     try {
       await uploadBytes(storageRef, file);
+      status.style.color = "#28a745";
       status.innerText = "✅ Upload Successful!";
       loadFiles(); // Refresh file list
     } catch (error) {
       console.error(error);
-      status.innerText = "❌ Upload Fail Ho Gaya!";
+      status.style.color = "#dc3545";
+      status.innerText = "❌ Upload Fail Ho Gaya! Firebase Rules check karein.";
     }
   }
 
@@ -112,7 +115,7 @@
       }
     } catch (error) {
       console.error(error);
-      fileList.innerHTML = "<p style='color: red;'>Files load nahi ho payi.</p>";
+      fileList.innerHTML = "<p style='color: red; text-align: center;'>Files load nahi ho payi. Firebase Storage Rules open karein.</p>";
     }
   }
 
