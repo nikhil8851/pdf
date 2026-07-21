@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Share - Mobile to PC</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7fe; padding: 20px; display: flex; justify-content: center; }
+        .container { max-width: 500px; width: 100%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        .upload-section { border: 2px dashed #007bff; border-radius: 8px; padding: 20px; text-align: center; background: #eef6ff; margin-bottom: 20px; }
+        input[type="file"] { display: none; }
+        .btn-upload { background: #007bff; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; display: inline-block; font-weight: bold; }
+        .btn-upload:hover { background: #0056b3; }
+        .file-list { margin-top: 20px; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; }
+        .file-name { font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+        .btn-download { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; }
+        .btn-download:hover { background: #218838; }
+        #status { text-align: center; color: #666; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📄 PDF File Share</h2>
+    
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <p>Mobile se PDF Choose karein:</p>
+        <label for="pdfInput" class="btn-upload">Select & Upload PDF</label>
+        <input type="file" id="pdfInput" accept="application/pdf" onchange="uploadFile()">
+        <p id="status"></p>
+    </div>
+
+    <!-- File List Section -->
+    <h3>Uploaded Files (PC / Laptop se Download karein):</h3>
+    <div class="file-list" id="fileList">
+        <p style="text-align: center; color: #888;">Fetching files...</p>
+    </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+  // 🔴 Yahan Apni Firebase Configuration Keys Daalein
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const storage = getStorage(app);
+
+  // File Upload Function
+  window.uploadFile = async function() {
+    const fileInput = document.getElementById('pdfInput');
+    const status = document.getElementById('status');
+    const file = fileInput.files[0];
+
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+        alert('Sirf PDF files hi upload ho sakti hain!');
+        return;
+    }
+
+    status.innerText = "Uploading... Kripya wait karein.";
+    const storageRef = ref(storage, 'pdfs/' + file.name);
+
+    try {
+      await uploadBytes(storageRef, file);
+      status.innerText = "✅ Upload Successful!";
+      loadFiles(); // Refresh file list
+    } catch (error) {
+      console.error(error);
+      status.innerText = "❌ Upload Fail Ho Gaya!";
+    }
+  }
+
+  // Load and Display Files
+  async function loadFiles() {
+    const fileList = document.getElementById('fileList');
+    const listRef = ref(storage, 'pdfs');
+
+    try {
+      const res = await listAll(listRef);
+      fileList.innerHTML = "";
+
+      if (res.items.length === 0) {
+        fileList.innerHTML = "<p style='text-align: center; color: #888;'>Koi file upload nahi hai.</p>";
+        return;
+      }
+
+      for (const itemRef of res.items) {
+        const url = await getDownloadURL(itemRef);
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'file-item';
+        itemDiv.innerHTML = `
+          <span class="file-name" title="${itemRef.name}">${itemRef.name}</span>
+          <a href="${url}" target="_blank" download class="btn-download">Download</a>
+        `;
+        fileList.appendChild(itemDiv);
+      }
+    } catch (error) {
+      console.error(error);
+      fileList.innerHTML = "<p style='color: red;'>Files load nahi ho payi.</p>";
+    }
+  }
+
+  // Initial Load
+  loadFiles();
+</script>
+
+</body>
+</html>
